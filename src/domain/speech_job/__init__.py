@@ -1,0 +1,1 @@
+"""Speech job domain package."""
