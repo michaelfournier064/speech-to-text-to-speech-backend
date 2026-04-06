@@ -16,6 +16,7 @@ def _to_response(job: SpeechJob) -> SpeechJobResponse:
     return SpeechJobResponse(
         id=str(job.id),
         status=job.status,
+        stage=job.stage,
         input_audio_key=str(job.input_audio_key),
         output_audio_key=str(job.output_audio_key) if job.output_audio_key else None,
         transcript=job.transcript,

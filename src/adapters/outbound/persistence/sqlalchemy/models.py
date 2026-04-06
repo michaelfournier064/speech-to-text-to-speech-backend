@@ -6,6 +6,7 @@ from datetime import datetime
 class SpeechJobModel:
     id: str
     status: str
+    stage: str
     input_audio_key: str
     output_audio_key: str | None
     transcript: str | None

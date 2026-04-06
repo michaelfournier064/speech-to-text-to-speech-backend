@@ -3,7 +3,7 @@ from uuid import UUID
 from src.adapters.outbound.persistence.sqlalchemy.models import SpeechJobModel
 from src.adapters.outbound.persistence.sqlalchemy.session import InMemorySession
 from src.domain.speech_job.entities import SpeechJob
-from src.domain.speech_job.enums import SpeechJobStatus
+from src.domain.speech_job.enums import SpeechJobStage, SpeechJobStatus
 from src.domain.speech_job.value_objects import ObjectKey, SpeechJobId
 
 
@@ -30,6 +30,7 @@ class SqlAlchemySpeechJobRepository:
         return SpeechJobModel(
             id=str(job.id),
             status=job.status.value,
+            stage=job.stage.value,
             input_audio_key=str(job.input_audio_key),
             output_audio_key=str(job.output_audio_key) if job.output_audio_key else None,
             transcript=job.transcript,
@@ -43,6 +44,7 @@ class SqlAlchemySpeechJobRepository:
         return SpeechJob(
             id=SpeechJobId(value=UUID(model.id)),
             status=SpeechJobStatus(model.status),
+            stage=SpeechJobStage(model.stage),
             input_audio_key=ObjectKey(model.input_audio_key),
             output_audio_key=ObjectKey(model.output_audio_key) if model.output_audio_key else None,
             transcript=model.transcript,
