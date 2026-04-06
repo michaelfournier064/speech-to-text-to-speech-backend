@@ -37,28 +37,28 @@ class CreateSpeechJob:
 
         try:
             job.mark_processing()
-            job.mark_stage(SpeechJobStage.FETCHING_INPUT_AUDIO)
+            job.mark_staged(SpeechJobStage.FETCHING_INPUT_AUDIO)
             self._repository.update(job)
 
             input_audio = self._storage.get_object(input_audio_key)
 
-            job.mark_stage(SpeechJobStage.NORMALIZING_AUDIO)
+            job.mark_staged(SpeechJobStage.NORMALIZING_AUDIO)
             self._repository.update(job)
             normalized_audio = self._audio_processor.normalize(input_audio)
 
-            job.mark_stage(SpeechJobStage.TRANSCRIBING_AUDIO)
+            job.mark_staged(SpeechJobStage.TRANSCRIBING_AUDIO)
             self._repository.update(job)
             raw_transcript = self._asr.transcribe(normalized_audio)
 
-            job.mark_stage(SpeechJobStage.TRANSFORMING_TRANSCRIPT)
+            job.mark_staged(SpeechJobStage.TRANSFORMING_TRANSCRIPT)
             self._repository.update(job)
             transcript = self._transformer.transform(raw_transcript)
 
-            job.mark_stage(SpeechJobStage.SYNTHESIZING_AUDIO)
+            job.mark_staged(SpeechJobStage.SYNTHESIZING_AUDIO)
             self._repository.update(job)
             output_audio = self._tts.synthesize(transcript)
 
-            job.mark_stage(SpeechJobStage.STORING_OUTPUT_AUDIO)
+            job.mark_staged(SpeechJobStage.STORING_OUTPUT_AUDIO)
             self._repository.update(job)
             output_key = f"speech-jobs/{job.id}.wav"
             stored_key = self._storage.put_object(output_key, output_audio)
