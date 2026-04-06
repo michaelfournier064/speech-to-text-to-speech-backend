@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
 from src.adapters.outbound.audio.ffmpeg_audio_processor import FfmpegAudioProcessor
-from src.adapters.outbound.persistence.sqlalchemy.session import InMemorySession
+from src.adapters.outbound.persistence.sqlalchemy.session import SqlAlchemySessionFactory
 from src.adapters.outbound.persistence.sqlalchemy.speech_job_repository import (
     SqlAlchemySpeechJobRepository,
 )
 from src.adapters.outbound.speech.piper_tts import PiperTts
 from src.adapters.outbound.speech.whisper_asr import WhisperAsr
-from src.adapters.outbound.storage.s3_object_storage import S3ObjectStorage
+from src.adapters.outbound.storage.local_object_storage import LocalObjectStorage
 from src.adapters.outbound.transcript.basic_transcript_transformer import (
     BasicTranscriptTransformer,
 )
@@ -27,9 +27,11 @@ class AppContainer:
 def build_container(settings: Settings | None = None) -> AppContainer:
     app_settings = settings or Settings()
 
-    session = InMemorySession()
-    repository = SqlAlchemySpeechJobRepository(session)
-    storage = S3ObjectStorage(root_dir=app_settings.storage_root)
+    session_factory = SqlAlchemySessionFactory(app_settings.database_url)
+    session_factory.create_tables()
+
+    repository = SqlAlchemySpeechJobRepository(session_factory)
+    storage = LocalObjectStorage(root_dir=app_settings.storage_root)
     asr = WhisperAsr()
     tts = PiperTts()
     transformer = BasicTranscriptTransformer()

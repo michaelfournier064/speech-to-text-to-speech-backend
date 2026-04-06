@@ -12,6 +12,8 @@ dependencies = [
   "uvicorn[standard]",
   "pydantic-settings",
   "python-multipart",
+  "sqlalchemy",
+  "psycopg[binary]",
 ]
 
 [tool.pytest.ini_options]

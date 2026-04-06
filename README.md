@@ -31,6 +31,30 @@ Follow these steps to set up the project:
 
 ## Running the App
 
+### 1) Configure environment
+
+Create a `.env` file in the project root:
+
+```env
+APP_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/speech_to_speech
+APP_STORAGE_ROOT=.data
+```
+
+- `APP_DATABASE_URL` points to your PostgreSQL instance.
+- `APP_STORAGE_ROOT` is local filesystem storage used for input/output audio objects.
+
+### 2) Ensure PostgreSQL database exists
+
+Create the target database before starting the app. Example:
+
+```sql
+CREATE DATABASE speech_to_speech;
+```
+
+The app creates the `speech_jobs` table automatically on startup.
+
+### 3) Start the API
+
 To start the application, run:
 
 ```bash
