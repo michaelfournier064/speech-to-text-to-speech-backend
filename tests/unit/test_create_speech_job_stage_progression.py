@@ -51,7 +51,11 @@ class FakeTranscriptTransformer:
 
 
 class FakeTtsService:
-    def synthesize(self, text: str) -> bytes:
+    def __init__(self) -> None:
+        self.last_voice: str | None = None
+
+    def synthesize(self, text: str, voice: str | None = None) -> bytes:
+        self.last_voice = voice
         return b"audio"
 
 
@@ -122,3 +126,21 @@ def test_create_speech_job_tracks_failed_stage_on_error() -> None:
     assert final_status is SpeechJobStatus.FAILED
     assert final_stage is SpeechJobStage.FAILED
     assert failed_job.error_message == "unable to store output"
+
+
+def test_create_speech_job_passes_requested_voice_to_tts() -> None:
+    repository = RecordingSpeechJobRepository()
+    tts = FakeTtsService()
+    use_case = CreateSpeechJob(
+        repository=repository,
+        asr=FakeAsrService(),
+        tts=tts,
+        storage=FakeObjectStorage(),
+        transformer=FakeTranscriptTransformer(),
+        audio_processor=FakeAudioProcessor(),
+    )
+
+    queued_job = use_case.execute("input/file.wav")
+    use_case.process(str(queued_job.id), voice="narrator")
+
+    assert tts.last_voice == "narrator"

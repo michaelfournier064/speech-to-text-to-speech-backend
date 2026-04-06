@@ -37,8 +37,8 @@ def create_speech_job(
 ) -> SpeechJobResponse:
     try:
         job = container.create_speech_job.execute(payload.input_audio_key)
-        background_tasks.add_task(container.create_speech_job.process, str(job.id))
-        logger.info("speech_job_processing_scheduled job_id=%s", job.id)
+        background_tasks.add_task(container.create_speech_job.process, str(job.id), payload.voice)
+        logger.info("speech_job_processing_scheduled job_id=%s voice=%s", job.id, payload.voice)
         return _to_response(job)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

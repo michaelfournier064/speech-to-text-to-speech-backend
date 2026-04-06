@@ -42,8 +42,10 @@ class FakeTranscriptTransformer:
 
 
 class FakeTtsService:
-    def synthesize(self, text: str) -> bytes:
-        return b"output audio"
+    def synthesize(self, text: str, voice: str | None = None) -> bytes:
+        if voice is None:
+            return b"output audio"
+        return f"output audio:{voice}".encode("utf-8")
 
 
 class FakeObjectStorage:
@@ -127,3 +129,19 @@ def test_create_job_returns_202_and_fails_when_polled() -> None:
 
         output_response = client.get(f"/v1/speech-jobs/{job_id}/output-audio")
         assert output_response.status_code == 409
+
+
+def test_create_job_uses_requested_voice() -> None:
+    app = _build_app(FakeObjectStorage())
+
+    with TestClient(app) as client:
+        create_response = client.post(
+            "/v1/speech-jobs",
+            json={"input_audio_key": "input/file.wav", "voice": "narrator"},
+        )
+        assert create_response.status_code == 202
+
+        job_id = create_response.json()["id"]
+        output_response = client.get(f"/v1/speech-jobs/{job_id}/output-audio")
+        assert output_response.status_code == 200
+        assert output_response.content == b"output audio:narrator"

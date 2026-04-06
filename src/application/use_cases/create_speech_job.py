@@ -47,10 +47,10 @@ class CreateSpeechJob:
         )
         return queued_job
 
-    def process(self, job_id: str) -> SpeechJob:
+    def process(self, job_id: str, voice: str | None = None) -> SpeechJob:
         """Process a queued speech job and persist stage transitions."""
 
-        logger.info("speech_job_processing_started job_id=%s", job_id)
+        logger.info("speech_job_processing_started job_id=%s voice=%s", job_id, voice)
         job = self._repository.get_by_id(job_id)
         if job is None:
             logger.warning("speech_job_processing_missing_job job_id=%s", job_id)
@@ -77,7 +77,7 @@ class CreateSpeechJob:
 
             job.mark_staged(SpeechJobStage.SYNTHESIZING_AUDIO)
             self._repository.update(job)
-            output_audio = self._tts.synthesize(transcript)
+            output_audio = self._tts.synthesize(transcript, voice=voice)
 
             job.mark_staged(SpeechJobStage.STORING_OUTPUT_AUDIO)
             self._repository.update(job)
