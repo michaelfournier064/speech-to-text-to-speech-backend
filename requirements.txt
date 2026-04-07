@@ -2,6 +2,9 @@ fastapi
 uvicorn[standard]
 pydantic-settings
 python-multipart
+sqlalchemy
+psycopg[binary]
+psycopg2[binary]
 pytest
 httpx
 ruff

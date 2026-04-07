@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
 
-from src.domain.speech_job.enums import SpeechJobStatus
+from src.domain.speech_job.enums import SpeechJobStage, SpeechJobStatus
 from src.domain.speech_job.value_objects import ObjectKey, SpeechJobId
 
 
@@ -9,6 +9,7 @@ from src.domain.speech_job.value_objects import ObjectKey, SpeechJobId
 class SpeechJob:
     id: SpeechJobId
     status: SpeechJobStatus
+    stage: SpeechJobStage
     input_audio_key: ObjectKey
     output_audio_key: ObjectKey | None = None
     transcript: str | None = None
@@ -20,8 +21,13 @@ class SpeechJob:
         self.status = SpeechJobStatus.PROCESSING
         self.updated_at = datetime.now(UTC)
 
+    def mark_staged(self, stage: SpeechJobStage) -> None:
+        self.stage = stage
+        self.updated_at = datetime.now(UTC)
+
     def mark_completed(self, transcript: str, output_audio_key: ObjectKey) -> None:
         self.status = SpeechJobStatus.COMPLETED
+        self.stage = SpeechJobStage.COMPLETED
         self.transcript = transcript
         self.output_audio_key = output_audio_key
         self.error_message = None
@@ -29,5 +35,6 @@ class SpeechJob:
 
     def mark_failed(self, error_message: str) -> None:
         self.status = SpeechJobStatus.FAILED
+        self.stage = SpeechJobStage.FAILED
         self.error_message = error_message
         self.updated_at = datetime.now(UTC)

@@ -201,6 +201,11 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Local speech runtime artifacts
+tools/downloads/
+tools/bin/
+models/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

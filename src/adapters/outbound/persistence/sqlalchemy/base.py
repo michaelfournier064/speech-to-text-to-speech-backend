@@ -1,1 +1,5 @@
-"""Base persistence artifacts placeholder for future SQLAlchemy integration."""
+from sqlalchemy.orm import DeclarativeBase
+
+
+class Base(DeclarativeBase):
+	pass

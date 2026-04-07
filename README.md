@@ -31,6 +31,52 @@ Follow these steps to set up the project:
 
 ## Running the App
 
+### 1) Configure environment
+
+Create a `.env` file in the project root:
+
+```env
+APP_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/speech_to_speech
+APP_STORAGE_ROOT=.data
+APP_FFMPEG_COMMAND=ffmpeg
+APP_FFMPEG_TIMEOUT_SECONDS=30
+APP_ASR_COMMAND=whisper-cli
+APP_ASR_MODEL_PATH=models/ggml-base.en.bin
+APP_ASR_LANGUAGE=en
+APP_ASR_TIMEOUT_SECONDS=120
+APP_TTS_COMMAND=piper
+APP_TTS_MODEL_PATH=models/en_US-lessac-medium.onnx
+APP_TTS_CONFIG_PATH=
+APP_TTS_TIMEOUT_SECONDS=60
+```
+
+- `APP_DATABASE_URL` points to your PostgreSQL instance.
+- `APP_STORAGE_ROOT` is local filesystem storage used for input/output audio objects.
+- `APP_FFMPEG_COMMAND` points to the ffmpeg binary used for audio normalization.
+- `APP_ASR_COMMAND`/`APP_ASR_MODEL_PATH` configure Whisper CLI transcription.
+- `APP_TTS_COMMAND`/`APP_TTS_MODEL_PATH` configure Piper synthesis.
+- timeout variables control external command execution limits in seconds.
+
+### Runtime prerequisites
+
+The default adapters run external binaries, so these tools must be installed and discoverable:
+
+- `ffmpeg`
+- `whisper-cli` (from whisper.cpp) with a valid model file
+- `piper` with a valid ONNX voice model (and optional config)
+
+### 2) Ensure PostgreSQL database exists
+
+Create the target database before starting the app. Example:
+
+```sql
+CREATE DATABASE speech_to_speech;
+```
+
+The app creates the `speech_jobs` table automatically on startup.
+
+### 3) Start the API
+
 To start the application, run:
 
 ```bash
