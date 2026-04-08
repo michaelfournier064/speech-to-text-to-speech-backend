@@ -1,6 +1,7 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.testclient import TestClient
 
+from src.adapters.inbound.api.fastapi_app import configure_exception_handlers
 from src.adapters.inbound.api.routes import speech_jobs
 from src.application.use_cases.create_speech_job import CreateSpeechJob
 from src.application.use_cases.get_output_audio import GetOutputAudio
@@ -64,6 +65,8 @@ class FakeObjectStorage:
 
 class FakeFailingObjectStorage(FakeObjectStorage):
     def put_object(self, key: str, data: bytes) -> str:
+        if "/input." in key:
+            return super().put_object(key, data)
         raise RuntimeError("unable to store output")
 
 
@@ -85,6 +88,7 @@ def _build_app(storage: FakeObjectStorage) -> FastAPI:
 
     app = FastAPI()
     app.state.container = container
+    configure_exception_handlers(app)
     v1_router = APIRouter(prefix="/v1")
     v1_router.include_router(speech_jobs.router, prefix="/speech-jobs", tags=["Speech Jobs"])
     app.include_router(v1_router)
@@ -95,7 +99,10 @@ def test_create_job_returns_202_and_completes_when_polled() -> None:
     app = _build_app(FakeObjectStorage())
 
     with TestClient(app) as client:
-        create_response = client.post("/v1/speech-jobs", json={"input_audio_key": "input/file.wav"})
+        create_response = client.post(
+            "/v1/speech-jobs",
+            files={"file": ("input.wav", b"input audio", "audio/wav")},
+        )
         assert create_response.status_code == 202
         assert create_response.json()["status"] == SpeechJobStatus.PENDING.value
         assert create_response.json()["stage"] == SpeechJobStage.QUEUED.value
@@ -109,13 +116,19 @@ def test_create_job_returns_202_and_completes_when_polled() -> None:
         output_response = client.get(f"/v1/speech-jobs/{job_id}/output-audio")
         assert output_response.status_code == 200
         assert output_response.content == b"output audio"
+        assert output_response.headers["content-disposition"].startswith(
+            'attachment; filename="'
+        )
 
 
 def test_create_job_returns_202_and_fails_when_polled() -> None:
     app = _build_app(FakeFailingObjectStorage())
 
     with TestClient(app) as client:
-        create_response = client.post("/v1/speech-jobs", json={"input_audio_key": "input/file.wav"})
+        create_response = client.post(
+            "/v1/speech-jobs",
+            files={"file": ("input.wav", b"input audio", "audio/wav")},
+        )
         assert create_response.status_code == 202
         assert create_response.json()["status"] == SpeechJobStatus.PENDING.value
         assert create_response.json()["stage"] == SpeechJobStage.QUEUED.value
@@ -137,7 +150,8 @@ def test_create_job_uses_requested_voice() -> None:
     with TestClient(app) as client:
         create_response = client.post(
             "/v1/speech-jobs",
-            json={"input_audio_key": "input/file.wav", "voice": "narrator"},
+            files={"file": ("input.wav", b"input audio", "audio/wav")},
+            data={"voice": "narrator"},
         )
         assert create_response.status_code == 202
 
@@ -145,3 +159,37 @@ def test_create_job_uses_requested_voice() -> None:
         output_response = client.get(f"/v1/speech-jobs/{job_id}/output-audio")
         assert output_response.status_code == 200
         assert output_response.content == b"output audio:narrator"
+
+
+def test_create_job_with_binary_body_returns_422() -> None:
+    app = _build_app(FakeObjectStorage())
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/v1/speech-jobs",
+            data=b"\x00\x81\xa7\xff\x10",
+            headers={"Content-Type": "application/octet-stream"},
+        )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert isinstance(detail, list)
+    assert detail
+
+
+def test_create_job_with_text_file_field_returns_422() -> None:
+    app = _build_app(FakeObjectStorage())
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/v1/speech-jobs",
+            data={
+                "file": r"C:\\Users\\micha\\OneDrive\\Documents\\Sound Recordings\\Recording (13).m4a",
+                "voice": "amy",
+            },
+        )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert isinstance(detail, list)
+    assert detail

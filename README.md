@@ -29,11 +29,34 @@ Follow these steps to set up the project:
    pip install -r requirements.txt
    ```
 
+4. **Bootstrap runtime assets (tools and models)**
+
+   The `tools/` and `models/` folders are ignored by git because they contain large binaries and model artifacts.
+   Generate them locally with:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\setup-runtime-assets.ps1
+   ```
+
+   To force a full re-download and re-extraction:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\setup-runtime-assets.ps1 -Force
+   ```
+
 ## Running the App
 
 ### 1) Configure environment
 
-Create a `.env` file in the project root:
+Copy `.env.example` to `.env` in the project root (recommended):
+
+```powershell
+Copy-Item .\.env.example .\.env
+```
+
+The example file already points to the generated local runtime artifacts under `tools/` and `models/`.
+
+If you prefer to create `.env` manually, use:
 
 ```env
 APP_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/speech_to_speech
@@ -48,6 +71,7 @@ APP_TTS_COMMAND=piper
 APP_TTS_MODEL_PATH=models/en_US-lessac-medium.onnx
 APP_TTS_CONFIG_PATH=
 APP_TTS_TIMEOUT_SECONDS=60
+APP_CORS_ORIGINS=http://localhost:3000
 ```
 
 - `APP_DATABASE_URL` points to your PostgreSQL instance.
@@ -56,14 +80,17 @@ APP_TTS_TIMEOUT_SECONDS=60
 - `APP_ASR_COMMAND`/`APP_ASR_MODEL_PATH` configure Whisper CLI transcription.
 - `APP_TTS_COMMAND`/`APP_TTS_MODEL_PATH` configure Piper synthesis.
 - timeout variables control external command execution limits in seconds.
+- `APP_CORS_ORIGINS` is a comma-separated allowlist of frontend origins for browser CORS.
 
 ### Runtime prerequisites
 
-The default adapters run external binaries, so these tools must be installed and discoverable:
+Use the bootstrap script from Project Setup to install the required Windows x64 runtime dependencies and models into local ignored folders:
 
-- `ffmpeg`
-- `whisper-cli` (from whisper.cpp) with a valid model file
-- `piper` with a valid ONNX voice model (and optional config)
+- `tools/bin/ffmpeg/.../ffmpeg.exe`
+- `tools/bin/whisper/Release/whisper-cli.exe`
+- `tools/bin/piper/piper/piper.exe`
+- `models/ggml-base.en.bin`
+- `models/en_US-*.onnx` and matching `.onnx.json` voice files
 
 ### 2) Ensure PostgreSQL database exists
 
