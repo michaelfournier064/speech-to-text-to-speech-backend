@@ -34,14 +34,30 @@ Follow these steps to set up the project:
    The `tools/` and `models/` folders are ignored by git because they contain large binaries and model artifacts.
    Generate them locally with:
 
+   - Windows:
+
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\scripts\setup-runtime-assets.ps1
    ```
 
+   - Linux/macOS:
+
+   ```bash
+   bash ./scripts/setup-runtime-assets.sh
+   ```
+
    To force a full re-download and re-extraction:
+
+   - Windows:
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\scripts\setup-runtime-assets.ps1 -Force
+   ```
+
+   - Linux/macOS:
+
+   ```bash
+   bash ./scripts/setup-runtime-assets.sh --force
    ```
 
 ## Running the App
@@ -84,11 +100,11 @@ APP_CORS_ORIGINS=http://localhost:3000
 
 ### Runtime prerequisites
 
-Use the bootstrap script from Project Setup to install the required Windows x64 runtime dependencies and models into local ignored folders:
+Use the bootstrap script from Project Setup to install the required runtime dependencies and models into local ignored folders:
 
-- `tools/bin/ffmpeg/.../ffmpeg.exe`
-- `tools/bin/whisper/Release/whisper-cli.exe`
-- `tools/bin/piper/piper/piper.exe`
+- `tools/bin/ffmpeg/.../ffmpeg` (Linux/macOS) or `ffmpeg.exe` (Windows)
+- `tools/bin/whisper/.../whisper-cli` (Linux/macOS) or `whisper-cli.exe` (Windows)
+- `tools/bin/piper/.../piper` (Linux/macOS) or `piper.exe` (Windows)
 - `models/ggml-base.en.bin`
 - `models/en_US-*.onnx` and matching `.onnx.json` voice files
 
@@ -108,6 +124,22 @@ To start the application, run:
 
 ```bash
 uvicorn src.adapters.inbound.api.fastapi_app:app --reload
+```
+
+## Render Deployment
+
+Use these settings for a Render web service:
+
+- Build Command:
+
+```bash
+pip install -r requirements.txt && bash ./scripts/setup-runtime-assets.sh
+```
+
+- Start Command:
+
+```bash
+uvicorn src.adapters.inbound.api.fastapi_app:app --host 0.0.0.0 --port $PORT
 ```
 
 ## API Documentation Generation
