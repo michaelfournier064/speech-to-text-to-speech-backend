@@ -48,6 +48,7 @@ APP_TTS_COMMAND=piper
 APP_TTS_MODEL_PATH=models/en_US-lessac-medium.onnx
 APP_TTS_CONFIG_PATH=
 APP_TTS_TIMEOUT_SECONDS=60
+APP_CORS_ORIGINS=http://localhost:3000
 ```
 
 - `APP_DATABASE_URL` points to your PostgreSQL instance.
@@ -56,6 +57,7 @@ APP_TTS_TIMEOUT_SECONDS=60
 - `APP_ASR_COMMAND`/`APP_ASR_MODEL_PATH` configure Whisper CLI transcription.
 - `APP_TTS_COMMAND`/`APP_TTS_MODEL_PATH` configure Piper synthesis.
 - timeout variables control external command execution limits in seconds.
+- `APP_CORS_ORIGINS` is a comma-separated allowlist of frontend origins for browser CORS.
 
 ### Runtime prerequisites
 
