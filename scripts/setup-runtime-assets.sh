@@ -168,9 +168,12 @@ fi
 
 PIPER_BIN="$(find "$TOOLS_DIR/piper" -type f -name piper | head -n 1 || true)"
 if [[ -n "$PIPER_BIN" ]]; then
-  if [[ "$PIPER_BIN" != "$TOOLS_DIR/piper/piper" ]]; then
-    ln -sfn "$PIPER_BIN" "$TOOLS_DIR/piper/piper"
+  if [[ ! -x "$PIPER_BIN" ]]; then
+    chmod +x "$PIPER_BIN"
   fi
+
+  # Keep a stable Linux path regardless of the archive's internal folder layout.
+  ln -sfn "$PIPER_BIN" "$TOOLS_DIR/piper/piper-bin"
 fi
 
 download_model "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" "$MODELS_DIR/ggml-base.en.bin"

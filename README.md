@@ -147,7 +147,7 @@ Set these environment variables in Render so the app uses the downloaded Linux b
 ```env
 APP_FFMPEG_COMMAND=tools/bin/ffmpeg/ffmpeg
 APP_ASR_COMMAND=tools/bin/whisper/whisper-cli
-APP_TTS_COMMAND=tools/bin/piper/piper
+APP_TTS_COMMAND=tools/bin/piper/piper-bin
 APP_ASR_MODEL_PATH=models/ggml-base.en.bin
 APP_TTS_MODEL_PATH=models/en_US-lessac-medium.onnx
 APP_TTS_CONFIG_PATH=models/en_US-lessac-medium.onnx.json
