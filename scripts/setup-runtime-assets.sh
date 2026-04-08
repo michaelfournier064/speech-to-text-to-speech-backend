@@ -161,12 +161,16 @@ find "$TOOLS_DIR/piper" -type f -name "piper" -exec chmod +x {} \;
 
 FFMPEG_BIN="$(find "$TOOLS_DIR/ffmpeg" -type f -name ffmpeg | head -n 1 || true)"
 if [[ -n "$FFMPEG_BIN" ]]; then
-  ln -sfn "$FFMPEG_BIN" "$TOOLS_DIR/ffmpeg/ffmpeg"
+  if [[ "$FFMPEG_BIN" != "$TOOLS_DIR/ffmpeg/ffmpeg" ]]; then
+    ln -sfn "$FFMPEG_BIN" "$TOOLS_DIR/ffmpeg/ffmpeg"
+  fi
 fi
 
 PIPER_BIN="$(find "$TOOLS_DIR/piper" -type f -name piper | head -n 1 || true)"
 if [[ -n "$PIPER_BIN" ]]; then
-  ln -sfn "$PIPER_BIN" "$TOOLS_DIR/piper/piper"
+  if [[ "$PIPER_BIN" != "$TOOLS_DIR/piper/piper" ]]; then
+    ln -sfn "$PIPER_BIN" "$TOOLS_DIR/piper/piper"
+  fi
 fi
 
 download_model "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" "$MODELS_DIR/ggml-base.en.bin"
