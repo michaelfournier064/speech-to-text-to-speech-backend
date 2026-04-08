@@ -1,4 +1,7 @@
 import logging
+from datetime import datetime, timezone
+from pathlib import Path
+import re
 
 from src.application.ports.repositories.speech_job_repository import SpeechJobRepository
 from src.application.ports.services.asr_service import AsrService
@@ -30,14 +33,38 @@ class CreateSpeechJob:
         self._transformer = transformer
         self._audio_processor = audio_processor
 
-    def execute(self, input_audio_key: str) -> SpeechJob:
-        """Create and persist a queued speech job."""
+    def _build_input_object_key(self, job_id: str, original_filename: str | None) -> str:
+        suffix = ".bin"
+        if original_filename:
+            candidate_suffix = Path(original_filename).suffix.lower()
+            if re.fullmatch(r"\.[a-z0-9]{1,10}", candidate_suffix):
+                suffix = candidate_suffix
+
+        return f"speech-jobs/{job_id}/input{suffix}"
+
+    def _build_output_object_key(self, input_audio_key: str, voice: str | None) -> str:
+        input_path = Path(input_audio_key)
+        safe_voice = re.sub(r"[^a-zA-Z0-9_-]+", "_", (voice or "default").strip())
+        safe_voice = safe_voice.strip("_") or "default"
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        output_filename = f"{safe_voice}_output_{timestamp}.wav"
+        return input_path.with_name(output_filename).as_posix()
+
+    def execute(self, input_audio_data: bytes, original_filename: str | None = None) -> SpeechJob:
+        """Store input audio and persist a queued speech job."""
+
+        if not input_audio_data:
+            raise ValueError("Input audio file is empty")
+
+        job_id = SpeechJobId.new()
+        input_object_key = self._build_input_object_key(str(job_id), original_filename)
+        stored_input_key = self._storage.put_object(input_object_key, input_audio_data)
 
         job = SpeechJob(
-            id=SpeechJobId.new(),
+            id=job_id,
             status=SpeechJobStatus.PENDING,
             stage=SpeechJobStage.QUEUED,
-            input_audio_key=ObjectKey(input_audio_key),
+            input_audio_key=ObjectKey(stored_input_key),
         )
         queued_job = self._repository.add(job)
         logger.info(
@@ -81,7 +108,7 @@ class CreateSpeechJob:
 
             job.mark_staged(SpeechJobStage.STORING_OUTPUT_AUDIO)
             self._repository.update(job)
-            output_key = f"speech-jobs/{job.id}.wav"
+            output_key = self._build_output_object_key(str(job.input_audio_key), voice)
             stored_key = self._storage.put_object(output_key, output_audio)
             job.mark_completed(transcript=transcript, output_audio_key=ObjectKey(stored_key))
             completed_job = self._repository.update(job)
