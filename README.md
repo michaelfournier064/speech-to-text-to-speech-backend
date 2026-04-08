@@ -83,6 +83,37 @@ To start the application, run:
 uvicorn src.adapters.inbound.api.fastapi_app:app --reload
 ```
 
+## API Documentation Generation
+
+Generate the documentation from the running API and build a static HTML doc.
+
+### 1) Call the OpenAPI endpoint and save the spec
+
+From the project root (while the API is running on port 8000):
+
+```powershell
+Invoke-WebRequest http://localhost:8000/openapi.json -OutFile .\docs\openapi.json
+```
+
+### 2) Build static HTML documentation
+
+From the project root:
+
+```powershell
+npx @redocly/cli build-docs .\docs\openapi.json --output .\docs\api-docs.html
+```
+
+### 3) Open the generated docs
+
+```powershell
+start .\docs\api-docs.html
+```
+
+### Optional live docs while API is running
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
 ## Implemented Structure
 
 The codebase now follows this clean architecture layout:
