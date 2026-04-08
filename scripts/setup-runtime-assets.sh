@@ -85,29 +85,89 @@ download_model() {
   curl -fL --retry 3 --retry-delay 1 "$url" -o "$destination"
 }
 
+ensure_command() {
+  local cmd="$1"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Required command not found: $cmd" >&2
+    exit 1
+  fi
+}
+
+ensure_whisper_cli() {
+  local whisper_root="$TOOLS_DIR/whisper"
+  local whisper_cli="$whisper_root/whisper-cli"
+
+  if [[ "$FORCE" -eq 0 && -x "$whisper_cli" ]]; then
+    echo "Using existing whisper-cli: $whisper_cli"
+    return
+  fi
+
+  ensure_command cmake
+  ensure_command make
+  ensure_command g++
+
+  rm -rf "$whisper_root"
+  mkdir -p "$whisper_root"
+
+  local whisper_src_archive="$DOWNLOADS_DIR/whisper-source.tar.gz"
+  download_with_fallback "whisper source" "$whisper_src_archive" \
+    "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.8.4.tar.gz" \
+    "https://github.com/ggml-org/whisper.cpp/archive/refs/tags/v1.8.3.tar.gz"
+
+  local src_parent="$whisper_root/src"
+  mkdir -p "$src_parent"
+  tar -xzf "$whisper_src_archive" -C "$src_parent"
+
+  local src_dir
+  src_dir="$(find "$src_parent" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+  if [[ -z "$src_dir" ]]; then
+    echo "Could not locate extracted whisper.cpp source directory." >&2
+    exit 1
+  fi
+
+  local build_dir="$whisper_root/build"
+  cmake -S "$src_dir" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release
+  cmake --build "$build_dir" --config Release -j "$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
+
+  local built_cli
+  built_cli="$(find "$build_dir" -type f -name whisper-cli | head -n 1)"
+  if [[ -z "$built_cli" ]]; then
+    echo "whisper-cli was not produced by the build." >&2
+    exit 1
+  fi
+
+  cp "$built_cli" "$whisper_cli"
+  chmod +x "$whisper_cli"
+  echo "Built whisper-cli at: $whisper_cli"
+}
+
 FFMPEG_ARCHIVE="$DOWNLOADS_DIR/ffmpeg-linux-amd64.tar.xz"
-WHISPER_ARCHIVE="$DOWNLOADS_DIR/whisper-bin-x64.tar.gz"
 PIPER_ARCHIVE="$DOWNLOADS_DIR/piper-linux-x86_64.tar.gz"
 
 download_with_fallback "ffmpeg" "$FFMPEG_ARCHIVE" \
   "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz" \
   "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz"
 
-download_with_fallback "whisper" "$WHISPER_ARCHIVE" \
-  "https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.1/whisper-bin-x64.tar.gz" \
-  "https://github.com/ggml-org/whisper.cpp/releases/download/v1.7.6/whisper-bin-x64.tar.gz"
-
 download_with_fallback "piper" "$PIPER_ARCHIVE" \
   "https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_linux_x86_64.tar.gz" \
   "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz"
 
 extract_archive "$FFMPEG_ARCHIVE" "$TOOLS_DIR/ffmpeg"
-extract_archive "$WHISPER_ARCHIVE" "$TOOLS_DIR/whisper"
 extract_archive "$PIPER_ARCHIVE" "$TOOLS_DIR/piper"
+ensure_whisper_cli
 
 find "$TOOLS_DIR/ffmpeg" -type f -name "ffmpeg" -exec chmod +x {} \;
-find "$TOOLS_DIR/whisper" -type f \( -name "whisper-cli" -o -name "whisper" \) -exec chmod +x {} \;
 find "$TOOLS_DIR/piper" -type f -name "piper" -exec chmod +x {} \;
+
+FFMPEG_BIN="$(find "$TOOLS_DIR/ffmpeg" -type f -name ffmpeg | head -n 1 || true)"
+if [[ -n "$FFMPEG_BIN" ]]; then
+  ln -sfn "$FFMPEG_BIN" "$TOOLS_DIR/ffmpeg/ffmpeg"
+fi
+
+PIPER_BIN="$(find "$TOOLS_DIR/piper" -type f -name piper | head -n 1 || true)"
+if [[ -n "$PIPER_BIN" ]]; then
+  ln -sfn "$PIPER_BIN" "$TOOLS_DIR/piper/piper"
+fi
 
 download_model "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin" "$MODELS_DIR/ggml-base.en.bin"
 

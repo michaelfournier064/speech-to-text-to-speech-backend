@@ -142,6 +142,17 @@ pip install -r requirements.txt && bash ./scripts/setup-runtime-assets.sh
 uvicorn src.adapters.inbound.api.fastapi_app:app --host 0.0.0.0 --port $PORT
 ```
 
+Set these environment variables in Render so the app uses the downloaded Linux binaries:
+
+```env
+APP_FFMPEG_COMMAND=tools/bin/ffmpeg/ffmpeg
+APP_ASR_COMMAND=tools/bin/whisper/whisper-cli
+APP_TTS_COMMAND=tools/bin/piper/piper
+APP_ASR_MODEL_PATH=models/ggml-base.en.bin
+APP_TTS_MODEL_PATH=models/en_US-lessac-medium.onnx
+APP_TTS_CONFIG_PATH=models/en_US-lessac-medium.onnx.json
+```
+
 ## API Documentation Generation
 
 Generate the documentation from the running API and build a static HTML doc.
